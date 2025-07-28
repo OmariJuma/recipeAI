@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from google.genai import types
 from app.config import system_instruction
+from app.schema.response_body import RecipeResponse
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(
@@ -11,7 +12,9 @@ client = genai.Client(
     
 )
 config = types.GenerateContentConfig(
-    system_instruction= system_instruction.INSTRUCTIONS
+    system_instruction= system_instruction.INSTRUCTIONS,
+    response_schema= RecipeResponse,
+    response_mime_type="application/json"
 )
 
 def gemini_setup(content):
@@ -19,7 +22,8 @@ def gemini_setup(content):
     response = client.models.generate_content_stream(
         model="gemini-2.5-flash",
         contents=content,
-        config=config   
+        config=config 
+          
     )
     for chunk in response:
         print(chunk.text)
