@@ -1,36 +1,101 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 
-type Message = {
-  role: "user" | "assistant";
-  text: string;
+
+type RecipeResponse = {
+  role: "assistant";
+  title: string;
+  description: string;
+  ingredients: string;
+  instructions: string[];
+  shoppingList: string[];
+  cookingTip: string;
 };
+
+type UserRequest = {
+  role: "user";
+  userMessage: string;
+};
+
+type Message = RecipeResponse | UserRequest;
 
 export default function Home() {
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Dummy assistant reply for demo
+  console.log(process.env.NEXT_PUBLIC_BACKEND_URI)
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim()) return;
-    const userMsg = { role: "user" as const, text: userInput };
+    
+    const userMsg: UserRequest = { role: "user", userMessage: userInput };
     setMessages((prev) => [...prev, userMsg]);
     setUserInput("");
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/genai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_message: userInput }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const recipeResponse: RecipeResponse = data;
+        setMessages((prev) => [...prev, recipeResponse]);
+      } else {
+        console.error('Failed to fetch recipe');
+      }
+    } catch (error) {
+      console.error('Error fetching recipe:', error);
+    }
+    
 
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: "Here's a recipe suggestion for you!" },
-      ]);
-    }, 1000);
+  };
+
+  const renderMessage = (msg: Message) => {
+    if (msg.role === "user") {
+      return (
+        <div className="rounded-lg px-4 py-2 max-w-[75%] shadow bg-orange-400 text-white">
+          {msg.userMessage}
+        </div>
+      );
+    } else {
+      return (
+        <div className="rounded-lg px-4 py-2 max-w-[75%] shadow bg-yellow-400 text-black">
+          <h3 className="font-bold text-lg mb-2">{msg.title}</h3>
+          <p className="mb-2">{msg.description}</p>
+          <div className="mb-2">
+            <strong>Ingredients:</strong> {msg.ingredients}
+          </div>
+          <div className="mb-2">
+            <strong>Instructions:</strong>
+            <ol className="list-decimal list-inside">
+              {msg.instructions.map((instruction, idx) => (
+                <li key={idx}>{instruction}</li>
+              ))}
+            </ol>
+          </div>
+          <div className="mb-2">
+            <strong>Shopping List:</strong>
+            <ul className="list-disc list-inside">
+              {msg.shoppingList.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <strong>Cooking Tip:</strong> {msg.cookingTip}
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -44,15 +109,7 @@ export default function Home() {
                 msg.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              <div
-                className={`rounded-lg px-4 py-2 max-w-[75%] shadow ${
-                  msg.role === "user"
-                    ? "bg-orange-400 text-white"
-                    : "bg-yellow-400 text-black"
-                }`}
-              >
-                {msg.text}
-              </div>
+              {renderMessage(msg)}
             </div>
           ))}
           <div ref={chatEndRef} />
@@ -63,8 +120,8 @@ export default function Home() {
         className="border-t px-4 py-3 flex items-center gap-2"
       >
         <input
-        type="text"
-          className="bg-yellow-500 text-white flex-1 resize-none  rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder:text-white"
+          type="text"
+          className="bg-yellow-500 text-white flex-1 resize-none rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder:text-white"
           placeholder="What do you want to cook today?"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}

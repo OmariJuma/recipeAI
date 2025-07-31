@@ -1,13 +1,11 @@
 from pydantic import BaseModel
 from typing import Literal, Optional
 
-class Ingredient(BaseModel):
-    name: str
-    status: Literal["have", "missing"]
 class RecipeResponse(BaseModel):
-    recipe_name: str
-    description: Optional[str] = ""
-    ingredients: list[Ingredient]
+    role: str = "assistant"
+    title: str
+    description: str
+    ingredients: str
     instructions: list[str]
-    shopping_list: list[str]
-    cooking_tip: str
+    shoppingList: list[str]
+    cookingTip: str
