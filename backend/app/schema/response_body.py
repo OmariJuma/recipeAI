@@ -9,3 +9,8 @@ class RecipeResponse(BaseModel):
     instructions: list[str]
     shoppingList: list[str]
     cookingTip: str
+
+class FollowUp(BaseModel):
+    role: str = "assistant"
+    greeting: str
+    follow_up: list[str]

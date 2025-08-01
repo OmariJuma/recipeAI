@@ -1,7 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 
-
 type RecipeResponse = {
   role: "assistant";
   title: string;
@@ -12,12 +11,18 @@ type RecipeResponse = {
   cookingTip: string;
 };
 
+type FollowUpQuestion = {
+  role: "assistant";
+  greeting: string | null;
+  followUp: string[];
+};
+
 type UserRequest = {
   role: "user";
   userMessage: string;
 };
 
-type Message = RecipeResponse | UserRequest;
+type Message = RecipeResponse | UserRequest | FollowUpQuestion;
 
 export default function Home() {
   const [userInput, setUserInput] = useState("");
@@ -27,36 +32,37 @@ export default function Home() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  console.log(process.env.NEXT_PUBLIC_BACKEND_URI)
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim()) return;
-    
+
     const userMsg: UserRequest = { role: "user", userMessage: userInput };
     setMessages((prev) => [...prev, userMsg]);
     setUserInput("");
-    
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/genai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ user_message: userInput }),
-      });
-      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/genai`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user_message: userInput }),
+        }
+      );
+
       if (response.ok) {
         const data = await response.json();
-        const recipeResponse: RecipeResponse = data;
+        const recipeResponse: RecipeResponse | FollowUpQuestion = data;
+
         setMessages((prev) => [...prev, recipeResponse]);
       } else {
-        console.error('Failed to fetch recipe');
+        console.error("Failed to fetch recipe");
       }
     } catch (error) {
-      console.error('Error fetching recipe:', error);
+      console.error("Error fetching recipe:", error);
     }
-    
-
   };
 
   const renderMessage = (msg: Message) => {
@@ -66,36 +72,70 @@ export default function Home() {
           {msg.userMessage}
         </div>
       );
-    } else {
-      return (
-        <div className="rounded-lg px-4 py-2 max-w-[75%] shadow bg-yellow-400 text-black">
-          <h3 className="font-bold text-lg mb-2">{msg.title}</h3>
-          <p className="mb-2">{msg.description}</p>
+    }
+
+    const assistantMsg = msg as any;
+
+    return (
+      <div className="rounded-lg px-4 py-2 max-w-[75%] shadow bg-yellow-400 text-black">
+        {assistantMsg.title && (
+          <h3 className="font-bold text-lg mb-2">{assistantMsg.title}</h3>
+        )}
+        {assistantMsg.description && (
+          <p className="mb-2">{assistantMsg.description}</p>
+        )}
+        {assistantMsg.ingredients && (
           <div className="mb-2">
-            <strong>Ingredients:</strong> {msg.ingredients}
+            <strong>Ingredients:</strong> {assistantMsg.ingredients}
           </div>
-          <div className="mb-2">
-            <strong>Instructions:</strong>
-            <ol className="list-decimal list-inside">
-              {msg.instructions.map((instruction, idx) => (
-                <li key={idx}>{instruction}</li>
-              ))}
-            </ol>
+        )}
+        {assistantMsg.instructions &&
+          Array.isArray(assistantMsg.instructions) && (
+            <div className="mb-2">
+              <strong>Instructions:</strong>
+              <ol className="list-decimal list-inside">
+                {assistantMsg.instructions.map(
+                  (instruction: string, idx: number) => (
+                    <li key={idx}>{instruction}</li>
+                  )
+                )}
+              </ol>
+            </div>
+          )}
+        {assistantMsg.shoppingList &&
+          Array.isArray(assistantMsg.shoppingList) && (
+            <div className="mb-2">
+              <strong>Shopping List:</strong>
+              <ul className="list-disc list-inside">
+                {assistantMsg.shoppingList.map((item: string, idx: number) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        {assistantMsg.cookingTip && (
+          <div>
+            <strong>Cooking Tip:</strong> {assistantMsg.cookingTip}
           </div>
-          <div className="mb-2">
-            <strong>Shopping List:</strong>
+        )}
+
+        {assistantMsg.follow_up && Array.isArray(assistantMsg.follow_up) && (
+          <>
+            {assistantMsg.greeting && (
+              <h3 className="font-bold text-md mb-2">
+                {assistantMsg.greeting}
+              </h3>
+            )}
+            <p className="font-bold mt-4 mb-1">Follow-up Questions:</p>
             <ul className="list-disc list-inside">
-              {msg.shoppingList.map((item, idx) => (
-                <li key={idx}>{item}</li>
+              {assistantMsg.follow_up.map((q: string, idx: number) => (
+                <li key={idx}>{q}</li>
               ))}
             </ul>
-          </div>
-          <div>
-            <strong>Cooking Tip:</strong> {msg.cookingTip}
-          </div>
-        </div>
-      );
-    }
+          </>
+        )}
+      </div>
+    );
   };
 
   return (

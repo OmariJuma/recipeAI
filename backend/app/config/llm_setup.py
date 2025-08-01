@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from google.genai import types
 from app.config import system_instruction
-from app.schema.response_body import RecipeResponse
+from app.schema.response_body import RecipeResponse, FollowUp
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(
@@ -13,7 +13,7 @@ client = genai.Client(
 )
 config = types.GenerateContentConfig(
     system_instruction= system_instruction.INSTRUCTIONS,
-    response_schema= RecipeResponse,
+    response_schema= RecipeResponse | FollowUp,
     response_mime_type="application/json"
 )
 

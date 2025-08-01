@@ -1,6 +1,7 @@
 from app.api.v1.endpoints import index
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -20,4 +21,3 @@ app.add_middleware(
 )
 print(frontend_uri)
 app.include_router(index.router, prefix="/api/v1")
-
