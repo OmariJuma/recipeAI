@@ -73,7 +73,7 @@ export default function Home() {
         </div>
       );
     }
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     const assistantMsg = msg as any;
 
     return (

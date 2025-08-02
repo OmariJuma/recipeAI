@@ -18,8 +18,6 @@ COPY . .
 # Expose the port FastAPI will run on
 EXPOSE 8000
 
-# Set environment variables (optional, can be overridden)
-ENV PYTHONUNBUFFERED=1
 
 # Activate venv and run the server
 CMD ["/bin/sh", "-c", ". .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
