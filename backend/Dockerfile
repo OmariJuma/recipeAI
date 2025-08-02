@@ -1,23 +1,20 @@
-FROM alpine:3.18.4
-# Install Python and other dependencies
-RUN apk add --no-cache python3 py3-pip
+FROM python:3.11-alpine
+
+# Install system dependencies
+RUN apk add --no-cache gcc musl-dev libffi-dev
 
 # Set work directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
+# Copy and install dependencies
 COPY requirements.txt .
-RUN python3 -m venv .venv && \
-    . .venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the rest of the application code
+# Copy application code
 COPY . .
 
-# Expose the port FastAPI will run on
+# Expose the port FastAPI will use
 EXPOSE 8000
 
-
-# Activate venv and run the server
-CMD ["/bin/sh", "-c", ". .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Run FastAPI using uvicorn
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
